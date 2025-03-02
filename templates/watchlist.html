@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watchlist - Crypto Screener</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-100">
+    <div x-data="watchlist()" x-init="init()" class="container mx-auto px-4 py-8">
+        <!-- Header with buttons -->
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-blue-400">Watchlist</h1>
+            <div class="flex space-x-4">
+                <a href="/" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition duration-300 ease-in-out flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                </a>
+                <button @click="exportWatchlist" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition duration-300 ease-in-out">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                </button>
+                <button @click="clearWatchlist" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition duration-300 ease-in-out">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Scrollable Watchlist Table -->
+        <div class="w-full overflow-x-auto rounded-lg shadow-lg">
+            <table class="w-full min-w-[1200px]">
+                <thead class="bg-gray-700 sticky top-0">
+                    <tr>
+                        <th class="px-4 py-3 text-left sticky left-0 bg-gray-700 z-10">Date Added</th>
+                        <th class="px-4 py-3 text-left">Time Added</th>
+                        <th class="px-4 py-3 text-left">Name</th>
+                        <th class="px-4 py-3">Price</th>
+                        <th class="px-4 py-3">Volume</th>
+                        <th class="px-4 py-3">RSI 4hr</th>
+                        <th class="px-4 py-3">RSI Daily</th>
+                        <th class="px-4 py-3">EMA 4hr</th>
+                        <th class="px-4 py-3">EMA Daily</th>
+                        <th class="px-4 py-3">Grade</th>
+                        <th class="px-4 py-3 sticky right-0 bg-gray-700 z-10">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="(item, index) in watchlistData" :key="index">
+                        <tr class="border-b border-gray-700 hover:bg-gray-800 group">
+                            <td class="px-4 py-3 sticky left-0 bg-gray-800 z-10" x-text="item.date_added"></td>
+                            <td class="px-4 py-3" x-text="item.time_added"></td>
+                            <td class="px-4 py-3" x-text="item.name"></td>
+                            <td class="px-4 py-3 text-right" x-text="formatNumber(item.price)"></td>
+                            <td class="px-4 py-3 text-right" x-text="formatVolume(item.volume)"></td>
+                            <td class="px-4 py-3 text-right" x-text="formatRSI(item.rsi_4hr)"></td>
+                            <td class="px-4 py-3 text-right" x-text="formatRSI(item.rsi_daily)"></td>
+                            <td class="px-4 py-3 text-center" x-text="item.ema_4hr"></td>
+                            <td class="px-4 py-3 text-center" x-text="item.ema_daily"></td>
+                            <td class="px-4 py-3 text-center" x-text="item.grade"></td>
+                            <td class="px-4 py-3 text-center sticky right-0 bg-gray-800 z-10">
+                                <div class="flex space-x-2 justify-center">
+                                    <button
+                                        @click="openTradingView(item.name)"
+                                        class="text-blue-500 hover:text-blue-500" title="Open in TradingView" >
+                                    <!--"transition duration-300 ease-in-out opacity-0 group-hover:opacity-100"-->
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-4m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2" />
+                                        </svg>
+                                    </button>
+                                    <button
+                                        @click="removeFromWatchlist(item.id)"
+                                        class="text-red-500 hover:text-red-500"
+                                        title="Remove from Watchlist"
+                                    >
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+        <div class="pt-6 mt-6 border-t border-gray-700">
+            <div class="flex justify-between items-center text-sm text-gray-400">
+                <span>Version 1.0.0</span>
+                <span>Created by Chizcarl</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function watchlist() {
+            return {
+                watchlistData: [],
+
+                async init() {
+                    try {
+                        const response = await fetch('/check_login');
+                        const data = await response.json();
+
+                        if (!data.logged_in) {
+                            alert('Session expired. Please login again.');
+                            window.location.href = '/login';
+                            return;
+                        }
+
+                        await this.fetchWatchlist();
+                    } catch (error) {
+                        console.error('Init error:', error);
+                        alert('Failed to initialize watchlist');
+                    }
+                },
+
+                async fetchWatchlist() {
+                    try {
+                        const response = await fetch('/watchlist');
+                        if (!response.ok) throw new Error('Failed to fetch watchlist');
+                        this.watchlistData = await response.json();
+                    } catch (error) {
+                        console.error('Error fetching watchlist:', error);
+                        alert('Failed to fetch watchlist. Please try again.');
+                    }
+                },
+
+                async removeFromWatchlist(itemId) {
+                    if (confirm('Are you sure you want to remove this item?')) {
+                        try {
+                            const response = await fetch(`/watchlist/${itemId}`, {
+                                method: 'DELETE'
+                            });
+                            if (!response.ok) {
+                                const errorData = await response.json(); // Parse the error response
+                                throw new Error(errorData.error || 'Failed to remove item');
+                            }
+                            await this.fetchWatchlist(); // Refresh the watchlist
+                        } catch (error) {
+                            console.error('Error removing item:', error);
+                            alert(error.message); // Show the actual error message
+                        }
+                    }
+                },
+
+                async clearWatchlist() {
+                    if (confirm('Are you sure you want to delete ALL items from the watchlist?')) {
+                        try {
+                            const response = await fetch('/clear_watchlist', {
+                                method: 'POST'
+                            });
+                            if (!response.ok) throw new Error('Failed to clear watchlist');
+                            this.watchlistData = []; // Clear local data
+                            alert('All items deleted successfully');
+                        } catch (error) {
+                            console.error('Error clearing watchlist:', error);
+                            alert('Failed to clear watchlist. Please try again.');
+                        }
+                    }
+                },
+
+                openTradingView(symbol) {
+                    window.open(`https://www.tradingview.com/chart/BycUlwZe/?symbol=BYBIT:${symbol}`, '_blank');
+                },
+
+                exportWatchlist() {
+                    window.location.href = '/export_watchlist';
+                },
+
+                formatRSI(value) {
+                    return value !== 'N/A' ? Number(value).toFixed(2) : 'N/A';
+                },
+
+                formatVolume(value) {
+                    if (value === 'N/A') return 'N/A';
+                    const num = Number(value);
+                    if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
+                    if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
+                    if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
+                    return num.toFixed(0);
+                },
+
+                formatNumber(value) {
+                    return value !== 'N/A' ? Number(value).toLocaleString(undefined, {
+                        maximumFractionDigits: 4,
+                        minimumFractionDigits: 2
+                    }) : 'N/A';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

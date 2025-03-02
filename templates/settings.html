@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Crypto Screener</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100">
+    <div x-data="settings()" x-init="loadSettings()" class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Enhanced Header with Responsive Fix -->
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-blue-400">Settings</h1>
+            <div class="flex space-x-4">
+                <a href="/" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition duration-300 ease-in-out flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                </a>
+                <a href="/watchlist_page"
+                   class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center">
+                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                   </svg>
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid lg:grid-cols-3 gap-8">
+            <!-- Settings Sections -->
+            <div class="lg:col-span-2 space-y-8">
+                <div class="bg-gray-800 rounded-2xl p-6 shadow-2xl border border-gray-700/50">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-semibold text-blue-400">
+                            <span class="bg-blue-400/10 px-3 py-1 rounded-lg mr-2">🏛️</span>
+                            Exchange Selection
+                        </h2>
+                        <span class="text-xs text-blue-300 bg-blue-400/10 px-2 py-1 rounded">Required</span>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <template x-for="exchange in allExchanges" :key="exchange">
+                            <label class="relative cursor-pointer">
+                                <input type="radio" x-model="selectedExchange" :value="exchange" name="exchange"
+                                       class="hidden peer">
+                                <div class="p-4 bg-gray-700 hover:bg-gray-600 peer-checked:bg-blue-500/20 peer-checked:border-blue-400
+                                            border-2 border-transparent rounded-xl transition-all duration-200">
+                                    <div class="font-medium text-gray-200 peer-checked:text-blue-300" x-text="exchange"></div>
+                                    <div class="text-xs text-gray-400 mt-1">24/7 Support</div>
+                                </div>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Contract Type Card -->
+                <div class="bg-gray-800 rounded-2xl p-6 shadow-2xl border border-gray-700/50">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-semibold text-blue-400">
+                            <span class="bg-blue-400/10 px-3 py-1 rounded-lg mr-2">📜</span>
+                            Contract Types
+                        </h2>
+                        <span class="text-xs text-blue-300 bg-blue-400/10 px-2 py-1 rounded">Required</span>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <template x-for="type in allTypes" :key="type">
+                            <label class="relative cursor-pointer">
+                                <input type="radio" x-model="selectedType" :value="type" name="type"
+                                       class="hidden peer">
+                                <div class="p-4 bg-gray-700 hover:bg-gray-600 peer-checked:bg-blue-500/20 peer-checked:border-blue-400
+                                            border-2 border-transparent rounded-xl transition-all duration-200">
+                                    <div class="font-medium text-gray-200 peer-checked:text-blue-300" x-text="type"></div>
+                                    <div class="text-xs text-gray-400 mt-1" x-text="type === 'swap' ? 'Perpetual Futures' :
+                                                                                      type === 'spot' ? 'Instant Trading' :
+                                                                                      'Market Indices'"></div>
+                                </div>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Save Section & About -->
+            <div class="space-y-8">
+                <!-- Save Card -->
+                <div class="bg-gray-800 rounded-2xl p-6 shadow-2xl border border-gray-700/50 sticky top-8 z-10">
+                    <div class="text-center space-y-6">
+                        <div class="text-blue-400 text-lg font-semibold">Session Settings</div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-400">Exchange:</span>
+                                <span class="text-gray-200 font-medium" x-text="selectedExchange"></span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-400">Contract Type:</span>
+                                <span class="text-gray-200 font-medium" x-text="selectedType"></span>
+                            </div>
+                        </div>
+                        <button @click="saveSettings"
+                                class="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600
+                                       text-white px-6 py-2.5 rounded-xl font-semibold transition-all duration-300
+                                       transform hover:scale-[1.02] flex items-center justify-center space-x-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Save Changes</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- About Card -->
+                <div class="bg-gray-800 rounded-2xl p-6 shadow-2xl border border-gray-700/50">
+                    <h2 class="text-xl font-semibold text-blue-400 mb-4">About & Support</h2>
+                    <div class="space-y-5 text-sm text-gray-300">
+                        <p>FREE Crypto Screener with real-time data, customizable filters, and
+                            TradingView integration and watchlisting function.</p>
+
+                        <div class="bg-gray-700/30 p-4 rounded-lg space-y-3">
+                            <div class="flex items-start space-x-2">
+                                <span class="text-blue-400">
+                                </span>
+                                <div>
+                                    <p class="font-medium">JC Ledesma (Chizcarl)</p>
+                                    <p class="font-medium text-xs text-gray-400">jcledesma@gmail.com</p>
+                                </div>
+                            </div>
+
+                            <div class="pt-3 space-y-2">
+                                <p class="text-xs text-blue-300">Support Development:</p>
+                                <div class="grid grid-cols-1 gap-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs">GCash:</span>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="font-mono text-xs">+639056994265</span>
+                                            <button @click="copyToClipboard('+639056994265')" class="text-blue-400 hover:text-blue-300">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs">BTC:</span>
+                                        <span class="font-mono text-xs text-gray-400">Coming Soon</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs">USDT:</span>
+                                        <span class="font-mono text-xs text-gray-400">Coming Soon</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-t border-gray-700">
+                            <div class="flex justify-between text-xs text-gray-400">
+                                <span>Version 1.0.0</span>
+                                <span>Created by Chizcarl</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function settings() {
+            return {
+                allExchanges: ['BINANCE', 'BYBIT', 'BITGET', 'MEXC', 'OKX', 'GATEIO', 'BITMEX', 'KUCOIN', 'COINBASE'],
+                allTypes: ['swap', 'spot', 'indices'],
+                selectedExchange: '',
+                selectedType: '',
+
+                async loadSettings() {
+                    try {
+                        const response = await fetch('/api/settings')
+                        const data = await response.json()
+                        this.selectedExchange = data.exchanges[0] || 'BYBIT'
+                        this.selectedType = data.types[0] || 'swap'
+                    } catch (error) {
+                        console.error('Settings error:', error)
+                        alert('Failed to load settings. Please try again.')
+                    }
+                },
+
+                async saveSettings() {
+                    try {
+                        await fetch('/api/settings', {
+                            method: 'PUT',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                exchanges: [this.selectedExchange],
+                                types: [this.selectedType]
+                            })
+                        })
+                        alert('Settings saved successfully!')
+                    } catch (error) {
+                        console.error('Save error:', error)
+                        alert('Failed to save settings')
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

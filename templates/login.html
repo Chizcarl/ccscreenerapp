@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Crypto Screener</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-100">
+    <div x-data="auth()" class="container mx-auto px-4 py-8 max-w-md">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-lg">
+            <!-- Dynamic Title -->
+            <h1 class="text-2xl font-bold mb-6 text-center">
+                <template x-if="mode === 'login'">Login</template>
+                <template x-if="mode === 'register'">Register</template>
+                <template x-if="mode === 'reset_init'">Password Recovery</template>
+                <template x-if="mode === 'security_questions'">Security Questions</template>
+                <template x-if="mode === 'verify_code'">Verify Code</template>
+                <template x-if="mode === 'new_password'">New Password</template>
+            </h1>
+
+            <!-- Login Form -->
+            <form x-show="mode === 'login'" @submit.prevent="login" class="space-y-4">
+                <div>
+                    <label class="block mb-1 text-sm font-medium">Username</label>
+                    <input type="text" x-model="username" class="w-full bg-gray-700 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block mb-1 text-sm font-medium">Password</label>
+                    <input type="password" x-model="password" class="w-full bg-gray-700 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div x-show="errors.login" class="text-red-400 text-sm p-2 bg-red-900/20 rounded mb-4"
+                     x-text="errors.login">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-medium">
+                    Sign In
+                </button>
+                <div class="text-center space-y-2 mt-4">
+                    <button type="button" @click="mode = 'register'" class="text-blue-400 hover:text-blue-500 text-sm">
+                        Create New Account
+                    </button>
+                    <br>
+                    <button type="button" @click="initiateReset" class="text-blue-400 hover:text-blue-500 text-sm">
+                        Forgot Password?
+                    </button>
+                </div>
+            </form>
+
+            <!-- Registration Form -->
+            <form x-show="mode === 'register'" @submit.prevent="register" class="space-y-4">
+                <div>
+                    <label class="block mb-1">Username</label>
+                    <input type="text" x-model="registerUsername" class="w-full bg-gray-700 rounded px-3 py-2" placeholder="Username" required>
+                    <div x-show="registerUsernameError" class="text-red-500" x-text="registerUsernameError"></div>
+                </div>
+                <div>
+                    <label class="block mb-1">Email</label>
+                    <input type="email" x-model="registerEmail" class="w-full bg-gray-700 rounded px-3 py-2" placeholder="Email Address" required>
+                    <div x-show="registerEmailError" class="text-red-500" x-text="registerEmailError"></div>
+                </div>
+                <div>
+                    <label class="block mb-1">Security Question 1</label>
+                    <select x-model="securityQuestion1" class="w-full bg-gray-700 rounded px-3 py-2" required>
+                        <option value="">Select Question 1</option>
+                        <option>What was your first pet's name?</option>
+                        <option>What is your mother's maiden name?</option>
+                        <option>What city were you born in?</option>
+                        <option>What was your childhood nickname?</option>
+                        <option>What is your favorite book?</option>
+                        <option>What was your first car's model?</option>
+                        <option>What school did you attend in 6th grade?</option>
+                        <option>What is your favorite movie?</option>
+                        <option>What was your first job?</option>
+                        <option>What is your favorite sports team?</option>
+                    </select>
+                    <input type="text" x-model="securityAnswer1" class="w-full bg-gray-700 rounded px-3 py-2 mt-2" placeholder="Answer 1" required>
+                    <div x-show="securityAnswer1Error" class="text-red-500" x-text="securityAnswer1Error"></div>
+                </div>
+
+                <div>
+                    <label class="block mb-1">Security Question 2</label>
+                    <select x-model="securityQuestion2" class="w-full bg-gray-700 rounded px-3 py-2" required>
+                        <option value="">Select Question 2</option>
+                        <option>What was the name of your first school?</option>
+                        <option>What is your favorite food?</option>
+                        <option>What is the name of your favorite teacher?</option>
+                        <option>What street did you grow up on?</option>
+                        <option>What is your favorite vacation spot?</option>
+                        <option>What was your first phone number?</option>
+                        <option>What is your father's middle name?</option>
+                        <option>What is your oldest sibling's birthday?</option>
+                        <option>What is your favorite color?</option>
+                        <option>What is your dream job?</option>
+                    </select>
+                    <input type="text" x-model="securityAnswer2" class="w-full bg-gray-700 rounded px-3 py-2 mt-2" placeholder="Answer 2" required>
+                    <div x-show="securityAnswer2Error" class="text-red-500" x-text="securityAnswer2Error"></div>
+                </div>
+                <div>
+                    <label class="block mb-1">Password</label>
+                    <input type="password" x-model="registerPassword" class="w-full bg-gray-700 rounded px-3 py-2" required>
+                    <div x-show="registerPasswordError" class="text-red-500" x-text="registerPasswordError"></div>
+                </div>
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded">
+                    Register
+                </button>
+                <p class="text-center mt-4">
+                    <button type="button" @click="mode = 'login'" class="text-blue-400 hover:text-blue-500">
+                        Back to Login
+                    </button>
+                </p>
+                <div x-show="errors.register" class="text-red-400 text-sm mb-4" x-text="errors.register"></div>
+            </form>
+
+            <!-- Password Reset Init Form -->
+            <form x-show="mode === 'reset_init'" @submit.prevent="getSecurityQuestions" class="space-y-4">
+                <div>
+                    <label class="block mb-1 text-sm font-medium">Email Address</label>
+                    <input type="email" x-model="resetEmail"
+                           class="w-full bg-gray-700 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block mb-1 text-sm font-medium">Username</label>
+                    <input type="text" x-model="resetUsername"
+                           class="w-full bg-gray-700 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div x-show="resetEmailError" class="text-red-400 text-sm" x-text="resetEmailError"></div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-medium">
+                    Continue
+                </button>
+                <div class="text-center mt-4">
+                    <button type="button" @click="mode = 'login'"
+                            class="text-blue-400 hover:text-blue-500 text-sm">
+                        Back to Login
+                    </button>
+                </div>
+                <div x-show="errors.reset" class="text-red-400 text-sm" x-text="errors.reset"></div>
+            </form>
+
+            <!-- Security Questions Form -->
+            <form x-show="mode === 'security_questions'" @submit.prevent="submitSecurityAnswers" class="space-y-4">
+                <div>
+                    <label class="block mb-1 text-sm font-medium" x-text="securityQuestion1"></label>
+                    <input type="text" x-model="securityAnswer1"
+                           class="w-full bg-gray-700 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block mb-1 text-sm font-medium" x-text="securityQuestion2"></label>
+                    <input type="text" x-model="securityAnswer2"
+                           class="w-full bg-gray-700 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div x-show="securityAnswerError" class="text-red-400 text-sm" x-text="securityAnswerError"></div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-medium">
+                    Verify Answers
+                </button>
+                <div class="text-center mt-4">
+                    <button type="button" @click="mode = 'reset_init'"
+                            class="text-blue-400 hover:text-blue-500 text-sm">
+                        Back
+                    </button>
+                </div>
+                <div x-show="errors.securityAnswers" class="text-red-400 text-sm" x-text="errors.securityAnswers"></div>
+            </form>
+
+            <!-- New Password Form -->
+            <form x-show="mode === 'new_password'" @submit.prevent="updatePassword" class="space-y-4">
+                <div>
+                    <label class="block mb-1 text-sm font-medium">New Password</label>
+                    <input type="password" x-model="newPassword"
+                           class="w-full bg-gray-700 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block mb-1 text-sm font-medium">Confirm Password</label>
+                    <input type="password" x-model="confirmPassword"
+                           class="w-full bg-gray-700 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div x-show="errors.password" class="text-red-400 text-sm" x-text="errors.password"></div>
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded font-medium">
+                    Set New Password
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function auth() {
+            return {
+                mode: 'login',
+                // Form fields
+                username: '',
+                password: '',
+                registerUsername: '',
+                registerPassword: '',
+                registerEmail: '',
+                securityQuestion1: '',
+                securityAnswer1: '',
+                securityQuestion2: '',
+                securityAnswer2: '',
+                resetEmail: '',
+                resetUsername: '',
+                verificationCode: '',
+                newPassword: '',
+                confirmPassword: '',
+                resetToken: '',
+
+                // Error messages
+                errors: {
+                    login: '',
+                    register: '',
+                    reset: '',
+                    securityAnswers: '',
+                    verification: '',
+                    password: ''
+                },
+
+                // Main login function
+                async login() {
+                    this.clearErrors();
+                    if (!this.validateLogin()) return;
+
+                    try {
+                        const response = await fetch('/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                username: this.username,
+                                password: this.password
+                            }),
+                            credentials: 'include'
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            window.location.href = '/';
+                        } else {
+                            this.errors.login = data.message || 'Invalid username or password';
+                        }
+                    } catch (error) {
+                        this.errors.login = 'Connection error. Please try again.';
+                    }
+                },
+
+                async register() {
+                    this.clearErrors();
+
+                    // Client-side validation
+                    let isValid = true;
+                    if (!this.registerUsername) {
+                        this.errors.register = 'Username is required';
+                        isValid = false;
+                    }
+                    if (!this.registerEmail.includes('@')) {
+                        this.errors.register = 'Invalid email format';
+                        isValid = false;
+                    }
+                    if (!this.securityQuestion1 || !this.securityQuestion2) {
+                        this.errors.register = 'Please select both security questions';
+                        isValid = false;
+                    }
+                    if (!this.securityAnswer1 || !this.securityAnswer2) {
+                        this.errors.register = 'Please answer both security questions';
+                        isValid = false;
+                    }
+                    if (this.registerPassword.length < 8) {
+                        this.errors.register = 'Password must be at least 8 characters';
+                        isValid = false;
+                    }
+                    if (!isValid) return;
+
+                    try {
+                        const response = await fetch('/register', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                username: this.registerUsername,
+                                email: this.registerEmail,
+                                password: this.registerPassword,
+                                security_question1: this.securityQuestion1,
+                                security_answer1: this.securityAnswer1,
+                                security_question2: this.securityQuestion2,
+                                security_answer2: this.securityAnswer2
+                            })
+                        });
+
+                        const data = await response.json();
+                        if (response.ok) {
+                            alert('Registration successful! Please login');
+                            this.mode = 'login';
+                            this.clearRegistrationFields();
+                        } else {
+                            this.errors.register = data.message || 'Registration failed';
+                        }
+                    } catch (error) {
+                        this.errors.register = 'Connection error';
+                    }
+                },
+
+                // Password reset flow
+                async getSecurityQuestions() {
+                    this.clearErrors();
+                    if (!this.resetEmail || !this.resetUsername) {
+                        this.errors.reset = 'Please fill all fields';
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch('/get_security_questions', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                email: this.resetEmail,
+                                username: this.resetUsername
+                            })
+                        });
+
+                        const data = await response.json();
+                        if (response.ok) {
+                            this.securityQuestion1 = data.question1;
+                            this.securityQuestion2 = data.question2;
+                            this.mode = 'security_questions';
+                        } else {
+                            this.errors.reset = data.message || 'Invalid email or username';
+                        }
+                    } catch (error) {
+                        this.errors.reset = 'Failed to retrieve security questions';
+                    }
+                },
+
+                async submitSecurityAnswers() {
+                    this.clearErrors();
+
+                    // Client-side validation
+                    if (!this.securityAnswer1 || !this.securityAnswer2) {
+                        this.errors.securityAnswers = 'Please answer both questions';
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch('/reset_password_request', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                email: this.resetEmail,
+                                username: this.resetUsername,
+                                answer1: this.securityAnswer1,
+                                answer2: this.securityAnswer2
+                            }),
+                            credentials: 'include'
+                        });
+
+                        const data = await response.json();
+                        if (response.ok) {
+                            this.resetToken = data.token;
+                            this.mode = 'new_password';
+                        } else {
+                            this.errors.securityAnswers = data.message || 'Verification failed';
+                        }
+                    } catch (error) {
+                        this.errors.securityAnswers = 'Failed to verify answers';
+                    }
+                },
+
+                async updatePassword() {
+                    this.clearErrors();
+                    if (!this.validatePassword()) return;
+
+                    try {
+                        const response = await fetch('/reset_password', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                token: this.resetToken,
+                                new_password: this.newPassword,
+                                confirm_password: this.confirmPassword
+                            }),
+                            credentials: 'include'
+                        });
+
+                        const data = await response.json();
+                        if (response.ok) {
+                            alert('Password updated! Please login');
+                            this.mode = 'login';
+                            this.clearResetFields();
+                        } else {
+                            this.errors.password = data.message || 'Update failed';
+                        }
+                    } catch (error) {
+                        this.errors.password = 'Connection error';
+                    }
+                },
+
+                // Helper functions
+                initiateReset() {
+                    this.mode = 'reset_init';
+                    this.clearErrors();
+                    this.clearResetFields();
+                },
+
+                validateLogin() {
+                    if (!this.username || !this.password) {
+                        this.errors.login = 'Please fill in both fields';
+                        return false;
+                    }
+                    return true;
+                },
+
+                validatePassword() {
+                    if (this.newPassword !== this.confirmPassword) {
+                        this.errors.password = 'Passwords must match';
+                        return false;
+                    }
+                    if (this.newPassword.length < 8) {
+                        this.errors.password = 'Minimum 8 characters';
+                        return false;
+                    }
+                    return true;
+                },
+
+                clearErrors() {
+                    this.errors = {
+                        login: '',
+                        register: '',
+                        reset: '',
+                        securityAnswers: '',
+                        verification: '',
+                        password: ''
+                    };
+                },
+
+                clearResetFields() {
+                    this.resetEmail = '';
+                    this.resetUsername = '';
+                    this.verificationCode = '';
+                    this.newPassword = '';
+                    this.confirmPassword = '';
+                    this.resetToken = '';
+                },
+            };
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Screener by Chizcarl</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/heroicons@2.0.18/dist/heroicons.css">
+
+    <style>
+        [x-cloak] { display: none !important; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .tradingview-widget-container { position: relative; }
+        .widget-label {
+            position: absolute;
+            top: 7px;
+            right: 5px;
+            color: #60a5fa;
+            font-size: 0.9rem;
+            z-index: 10;
+            background: rgba(31, 41, 55, 0.8);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-gray-100">
+    <div x-data="cryptoScreener()" x-init="initApp()" class="container mx-auto px-4 py-8">
+
+        <div x-show="showAboutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-blue-400">About Crypto Screener</h3>
+                    <button @click="showAboutModal = false" class="text-gray-400 hover:text-gray-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="space-y-3 text-gray-300">
+                    <p>A powerful cryptocurrency market scanning tool designed to help traders identify potential opportunities across multiple exchanges.</p>
+                    <p><strong>Creator:</strong> Chizcarl</p>
+                    <p><strong>Version:</strong> 1.0.0</p>
+                    <p><strong>Features:</strong></p>
+                    <ul class="list-disc list-inside">
+                        <li>Real-time market data</li>
+                        <li>Customizable filters</li>
+                        <li>TradingView integration</li>
+                        <li>Personal watchlist</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header Section -->
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-blue-400">Crypto Screener</h1>
+                <div class="text-sm text-gray-400">
+                    <span x-text="isLoggedIn ? 'Logged in as: ' + username : 'Guest Mode'"></span>
+                </div>
+            </div>
+
+            <div class="flex space-x-4">
+                <template x-if="isAdmin">
+                    <a href="/admin" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </a>
+                </template>
+
+                <template x-if="!isLoggedIn">
+                    <button @click="redirectToLogin" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                        </svg>
+                    </button>
+                </template>
+
+                <template x-if="isLoggedIn">
+                    <button @click="logout" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                    </button>
+                </template>
+
+                <a href="/watchlist_page"
+                   @click.prevent="checkAndNavigate(event)"
+                   class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center">
+                   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                   </svg>
+                </a>
+                <a href="/settings" @click.prevent="handleSettingsClick(event)" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+
+        <!-- Filters & Chart Section -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="bg-gray-800 p-3 rounded-lg h-full">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2 text-blue-400">4HR Timeframe</h3>
+                        <div class="space-y-2">
+                            <div>
+                                <label class="block text-sm mb-1">Price > EMA</label>
+                                <select x-model="filters.ema_4hr"
+                                        class="w-full bg-gray-700 text-white rounded-lg px-2 py-1 text-sm">
+                                    <option value="None">None</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-1">RSI Above</label>
+                                <select x-model="filters.rsi_4hr"
+                                        class="w-full bg-gray-700 text-white rounded-lg px-2 py-1 text-sm">
+                                    <option value="None">None</option>
+                                    <option value="30">30</option>
+                                    <option value="40">40</option>
+                                    <option value="50">50</option>
+                                    <option value="60">60</option>
+                                    <option value="70">70</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Daily Filters -->
+                    <div>
+                        <h3 class="text-lg font-semibold mb-2 text-blue-400">Daily Timeframe</h3>
+                        <div class="space-y-2">
+                            <div>
+                                <label class="block text-sm mb-1">Price > EMA</label>
+                                <select x-model="filters.ema_daily"
+                                        class="w-full bg-gray-700 text-white rounded-lg px-2 py-1 text-sm">
+                                    <option value="None">None</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-1">RSI Above</label>
+                                <select x-model="filters.rsi_daily"
+                                        class="w-full bg-gray-700 text-white rounded-lg px-2 py-1 text-sm">
+                                    <option value="None">None</option>
+                                    <option value="30">30</option>
+                                    <option value="40">40</option>
+                                    <option value="50">50</option>
+                                    <option value="60">60</option>
+                                    <option value="70">70</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Actions -->
+                <div class="mt-4 space-y-2">
+                        <button @click="applyFilters"
+                                class="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600
+                                       text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300
+                                       transform hover:scale-[1.02] flex items-center justify-center space-x-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Apply Filters</span>
+                        </button>
+                    <button @click="resetFilters" class="w-full bg-gray-600 hover:bg-gray-700 text-white py-2.5 rounded-lg">
+                        Reset Filters
+                    </button>
+                </div>
+            </div>
+
+            <!-- TradingView Widget -->
+            <div class="bg-gray-800 p-4 rounded-lg h-full md:col-span-2">
+                <div class="tradingview-widget-container h-full w-full">
+                    <div class="widget-label">
+                        <a href="https://www.tradingview.com/chart/BycUlwZe/?symbol=BINANCE:BTCUSDT.P" rel="noopener nofollow" target="_blank">
+                            <span class="blue-text">BTCUSDT.P</span>
+                        </a>
+                    </div>
+                    <div class="tradingview-widget-container__widget h-full"></div>
+                    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
+                    {
+                        "symbols": [[ "{{ current_exchange }}:BTCUSDT.P|3M" ]],
+                        "chartOnly": true,
+                        "width": "100%",
+                        "height": "100%",
+                        "locale": "en",
+                        "colorTheme": "dark",
+                        "autosize": true,
+                        "showVolume": true,
+                        "showMA": true,
+                        "hideDateRanges": false,
+                        "hideMarketStatus": true,
+                        "hideSymbolLogo": true,
+                        "scalePosition": "right",
+                        "scaleMode": "Normal",
+                        "fontFamily": "-apple-system, BlinkMacSystemFont, Trebuchet MS, Roboto, Ubuntu, sans-serif",
+                        "fontSize": "10",
+                        "noTimeScale": false,
+                        "valuesTracking": "1",
+                        "changeMode": "price-and-percent",
+                        "chartType": "candlesticks",
+                        "maLineColor": "#2962FF",
+                        "maLineWidth": 1,
+                        "maLength": 100,
+                        "headerFontSize": "small",
+                        "lineType": 0,
+                        "dateRanges": [ "1m|1D", "3m|1D", "6m|1D", "12m|1D" ],
+                        "upColor": "#22ab94",
+                        "downColor": "#f7525f",
+                        "borderUpColor": "#22ab94",
+                        "borderDownColor": "#f7525f",
+                        "wickUpColor": "#22ab94",
+                        "wickDownColor": "#f7525f"
+                    }
+                    </script>
+                </div>
+            </div>
+        </div>
+
+        <!-- Market Scanner Table -->
+        <div class="bg-gray-800 rounded-lg overflow-hidden">
+            <div class="px-4 py-2 bg-gray-700 flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-blue-400">Market Scanner</h2>
+                <div class="text-sm text-gray-400">
+                    Showing <span x-text="filteredData.length"></span> pairs
+                </div>
+            </div>
+
+            <!-- Table Content -->
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[1000px]">
+                    <thead class="bg-gray-700 sticky top-0 z-10">
+                        <tr>
+                            <th @click="sortData('name')" class="px-4 py-2 text-left cursor-pointer hover:bg-gray-600 sticky left-0 bg-gray-700 z-20">
+                                Name
+                                <template x-if="sortBy === 'name'">
+                                    <span class="ml-1">
+                                        <template x-if="sortDirection === 'asc'">↑</template>
+                                        <template x-if="sortDirection === 'desc'">↓</template>
+                                    </span>
+                                </template>
+                            </th>
+                             <th @click="sortData('close')" class="px-4 py-2 cursor-pointer hover:bg-gray-600">
+                                Price
+                                <template x-if="sortBy === 'close'">
+                                    <span class="ml-1">
+                                        <template x-if="sortDirection === 'asc'">↑</template>
+                                        <template x-if="sortDirection === 'desc'">↓</template>
+                                    </span>
+                                </template>
+                            </th>
+                            <th @click="sortData('volume')" class="px-4 py-2 cursor-pointer hover:bg-gray-600">
+                                Volume
+                                <template x-if="sortBy === 'volume'">
+                                    <span class="ml-1">
+                                        <template x-if="sortDirection === 'asc'">↑</template>
+                                        <template x-if="sortDirection === 'desc'">↓</template>
+                                    </span>
+                                </template>
+                            </th>
+                            <th @click="sortData('RSI|240')" class="px-4 py-2 cursor-pointer hover:bg-gray-600">
+                                RSI 4hr
+                                <template x-if="sortBy === 'RSI|240'">
+                                    <span class="ml-1">
+                                        <template x-if="sortDirection === 'asc'">↑</template>
+                                        <template x-if="sortDirection === 'desc'">↓</template>
+                                    </span>
+                                </template>
+                            </th>
+                            <th @click="sortData('RSI')" class="px-4 py-2 cursor-pointer hover:bg-gray-600">
+                                RSI Daily
+                                <template x-if="sortBy === 'RSI'">
+                                    <span class="ml-1">
+                                        <template x-if="sortDirection === 'asc'">↑</template>
+                                        <template x-if="sortDirection === 'desc'">↓</template>
+                                    </span>
+                                </template>
+                            </th>
+                            <th @click="sortData('EMA100|240_class')" class="px-4 py-2 cursor-pointer hover:bg-gray-600">
+                                EMA 4hr
+                                <template x-if="sortBy === 'EMA100|240_class'">
+                                    <span class="ml-1">
+                                        <template x-if="sortDirection === 'asc'">↑</template>
+                                        <template x-if="sortDirection === 'desc'">↓</template>
+                                    </span>
+                                </template>
+                            </th>
+                            <th @click="sortData('EMA100_class')" class="px-4 py-2 cursor-pointer hover:bg-gray-600">
+                                EMA Daily
+                                <template x-if="sortBy === 'EMA100_class'">
+                                    <span class="ml-1">
+                                        <template x-if="sortDirection === 'asc'">↑</template>
+                                        <template x-if="sortDirection === 'desc'">↓</template>
+                                    </span>
+                                </template>
+                            </th>
+                            <th class="px-4 py-2">Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <template x-for="item in sortedData" :key="item.name">
+                            <tr class="border-b border-gray-700 hover:bg-gray-700 transition">
+                                <td class="px-4 py-2 font-medium sticky left-0 bg-gray-800" x-text="item.name"></td>
+                                <td class="px-4 py-2 text-center" x-text="formatNumber(item.close)"></td>
+                                <td class="px-4 py-2 text-center" x-text="formatVolume(item.volume)"></td>
+                                <td class="px-4 py-2 text-center" x-text="formatRSI(item['RSI|240'])"></td>
+                                <td class="px-4 py-2 text-center" x-text="formatRSI(item.RSI)"></td>
+                                <td class="px-4 py-2 text-center" x-text="item['EMA100|240_class']"></td>
+                                <td class="px-4 py-2 text-center" x-text="item.EMA100_class"></td>
+                                <td class="px-4 py-2 text-center">
+                                    <div class="flex space-x-2 justify-center">
+                                        <button
+                                            @click="addToWatchlist(item)"
+                                            :disabled="!isLoggedIn"
+                                            class="text-green-500 hover:text-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title="Login to use watchlist"
+                                        >
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                        </button>
+                                        <button @click="openTradingView(item.name)" class="text-blue-500 hover:text-blue-600">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-4m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="pt-6 mt-6 border-t border-gray-700">
+            <div class="flex justify-between items-center text-sm text-gray-400">
+                <span>Version 1.0.0</span>
+                <span>Created by Chizcarl</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function cryptoScreener() {
+            return {
+                // Data Properties
+                filters: { ema_4hr: 'None', rsi_4hr: 'None', ema_daily: 'None', rsi_daily: 'None' },
+                filteredData: [],
+                sortBy: null,
+                sortDirection: 'asc',
+                isLoggedIn: false,
+                isAdmin: false,
+                username: '',
+                userSettings: { exchanges: ['BYBIT'] },
+                showAboutModal: false,
+
+                // Initialization
+                initApp() {
+                    this.checkLoginStatus();
+                    this.applyFilters();
+                    this.fetchData();
+                    if (this.isLoggedIn) {
+                        this.fetchUserSettings();
+                    }
+                },
+
+                // Data Methods
+                async fetchData() {
+                    try {
+                        const response = await fetch('/fetch_data');
+                        if (response.status === 401) {
+                            this.isLoggedIn = false;
+                            return;
+                        }
+                        const data = await response.json();
+                        this.filteredData = data.map(item => ({
+                            ...item,
+                            // Keep raw values for sorting
+                            'RSI|240': item['RSI|240'],
+                            RSI: item.RSI,
+                            volume: item.volume,
+                            close: item.close
+                        }));
+                    } catch (error) {
+                        console.error('Error fetching data:', error);
+                    }
+                },
+                async applyFilters() {
+                    try {
+                        const filters = {
+                            ema_4hr: this.filters.ema_4hr !== 'None' ? this.filters.ema_4hr : null,
+                            rsi_4hr: this.filters.rsi_4hr !== 'None' ? this.filters.rsi_4hr : null,
+                            ema_daily: this.filters.ema_daily !== 'None' ? this.filters.ema_daily : null,
+                            rsi_daily: this.filters.rsi_daily !== 'None' ? this.filters.rsi_daily : null
+                        };
+
+                        const response = await fetch('/apply_filter', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(filters)
+                        });
+
+                        const data = await response.json();
+                        this.filteredData = data.map(item => ({
+                            ...item,
+                            // Keep raw values for sorting
+                            'RSI|240': item['RSI|240'],
+                            RSI: item.RSI,
+                            volume: item.volume,
+                            close: item.close
+                        }));
+                    } catch (error) {
+                        console.error('Error applying filters:', error);
+                        this.filteredData = [];
+                    }
+                },
+                async checkLoginStatus() {
+                    try {
+                        const response = await fetch('/check_login');
+                        const data = await response.json();
+                        this.isLoggedIn = data.logged_in;
+                        this.username = data.username || 'Guest';
+                        this.isAdmin = data.is_admin || false;
+                    } catch (error) {
+                        console.error('Error checking login status:', error);
+                        this.username = 'Guest';
+                    }
+                },
+                async fetchUserSettings() {
+                    try {
+                        const response = await fetch('/api/settings');
+                        if (response.ok) {
+                            this.userSettings = await response.json();
+                        }
+                    } catch (error) {
+                        console.error('Error fetching user settings:', error);
+                    }
+                },
+
+                // UI Methods
+                sortData(column) {
+                    if (this.sortBy === column) {
+                        this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        this.sortBy = column;
+                        this.sortDirection = 'asc';
+                    }
+                },
+                resetFilters() {
+                    this.filters = {
+                        ema_4hr: 'None',
+                        rsi_4hr: 'None',
+                        ema_daily: 'None',
+                        rsi_daily: 'None'
+                    };
+                    this.applyFilters();  // Apply empty filters to show all data
+                },
+                openTradingView(symbol) {
+                    const exchange = this.userSettings.exchanges[0] || 'BYBIT';
+                    window.open(`https://www.tradingview.com/chart/?symbol=${exchange}:${symbol}`, '_blank');
+                },
+
+                // Auth Methods
+                async logout() {
+                    try {
+                        await fetch('/logout', { method: 'POST' });
+                        this.isLoggedIn = false;
+                        this.isAdmin = false;
+                        this.username = 'Guest';
+                        // Don't reload, just clear user-specific state
+                        this.filteredData = [];  // Clear existing data
+                        await this.fetchData();  // Re-fresh data as guest
+                        this.applyFilters()
+                    } catch (error) {
+                        console.error('Error logging out:', error);
+                    }
+                },
+                async redirectToLogin() {
+                    window.location.href = '/login';
+                },
+
+                // Watchlist Methods
+                async addToWatchlist(item) {
+                    if (!this.isLoggedIn) {
+                        if (confirm('You need to login to use the watchlist. Go to login page?')) {
+                            window.location.href = '/login';
+                        }
+                        return;
+                    }
+
+                    const grade = prompt('Enter grade (A/B/C/D/F):', 'A');
+                    if (!grade) return;
+
+                    try {
+                        const response = await fetch('/watchlist', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                name: item.name,
+                                price: item.close,
+                                volume: item.volume,
+                                rsi_4hr: item['RSI|240'],
+                                rsi_daily: item.RSI,
+                                ema_4hr: item['EMA100|240_class'],
+                                ema_daily: item.EMA100_class,
+                                grade: grade
+                            })
+                        });
+
+                        if (response.status === 401) {
+                            alert('Session expired. Please login again.');
+                            window.location.href = '/login';
+                        } else if (!response.ok) {
+                            throw new Error('Failed to add to watchlist');
+                        }
+
+                        // Success handling
+                        alert('Added to watchlist successfully!');
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert(error.message);
+                    }
+                },
+                async checkAndNavigate(event) {
+                    event.preventDefault();
+                    const target = event.currentTarget.href;
+                    try {
+                        const response = await fetch('/check_login');
+                        const data = await response.json();
+
+                        if (!data.logged_in) {
+                            if (confirm('This feature requires login. Go to login page?')) {
+                                window.location.href = '/login';
+                            }
+                            return;
+                        }
+                        window.location.href = target;
+                    } catch (error) {
+                        console.error('Navigation error:', error);
+                        alert('Failed to navigate. Please try again.');
+                    }
+                },
+                async handleSettingsClick(event) {
+                    const target = event.currentTarget.href;
+                    try {
+                        const response = await fetch('/check_login');
+                        const data = await response.json();
+
+                        if (!data.logged_in) {
+                            this.showAboutModal = true;
+                            return;
+                        }
+                        window.location.href = target;
+                    } catch (error) {
+                        console.error('Navigation error:', error);
+                        alert('Failed to navigate. Please try again.');
+                    }
+                },
+
+                // Formatting Helpers
+                formatRSI(value) {
+                    if ([null, undefined, 'N/A'].includes(value)) return 'N/A';
+                    return Number(value).toFixed(2);
+                },
+                formatVolume(value) {
+                    if ([null, undefined, 'N/A'].includes(value)) return 'N/A';
+                    const num = Number(value);
+                    if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
+                    if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
+                    if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
+                    return num.toFixed(0);
+                },
+                formatNumber(value) {
+                    if ([null, undefined, 'N/A'].includes(value)) return 'N/A';
+                    return Number(value).toLocaleString(undefined, {
+                        maximumFractionDigits: 4,
+                        minimumFractionDigits: 2
+                    });
+                },
+
+                // Computed Properties
+                get sortedData() {
+                    if (!this.sortBy) return this.filteredData;
+
+                    return [...this.filteredData].sort((a, b) => {
+                        let valueA = a[this.sortBy];
+                        let valueB = b[this.sortBy];
+
+                        // Handle null/undefined/N/A values
+                        if ([null, undefined, 'N/A'].includes(valueA)) return 1;
+                        if ([null, undefined, 'N/A'].includes(valueB)) return -1;
+
+                        // Numeric comparison
+                        if (!isNaN(valueA) && !isNaN(valueB)) {
+                            valueA = Number(valueA);
+                            valueB = Number(valueB);
+                            return this.sortDirection === 'asc' ? valueA - valueB : valueB - valueA;
+                        }
+
+                        // String comparison
+                        return this.sortDirection === 'asc'
+                            ? String(valueA).localeCompare(String(valueB))
+                            : String(valueB).localeCompare(String(valueA));
+                    });
+                },
+            }
+        }
+    </script>
+</body>
+</html>
